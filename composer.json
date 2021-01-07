@@ -1,5 +1,6 @@
 {
     "name": "d3f3kt/german-zip-to-state",
+    "description": "Small script to resolve a German zip to a state and city.",
     "authors": [
         {
             "name": "David Geistert",
