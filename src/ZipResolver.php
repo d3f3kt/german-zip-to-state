@@ -7,37 +7,44 @@ use GerZippy\Exception\NoZipFoundException;
 
 class ZipResolver implements ZipResolverInterface
 {
-    /** @var resource */
-    private $zipFileHandle;
-
-    public function __construct()
-    {
-        $this->zipFileHandle = fopen(__DIR__.'/../Resources/zips.csv', 'r');
-        if (!is_resource($this->zipFileHandle)) {
-            throw new DatabaseReadException();
-        }
-    }
-
-    public function __destruct()
-    {
-        fclose($this->zipFileHandle);
-    }
-
+    /**
+     * [zip => [city, state], ...]
+     *
+     * @var array[]
+     */
+    private $zips;
 
     public function resolveZip(string $zip): Zip
     {
-        rewind($this->zipFileHandle);
-        while (($data = fgetcsv($this->zipFileHandle)) !== false) {
-            if ($data[2] == $zip) {
-                return $this->createZipModel($data);
-            }
+        if(null === $this->zips) {
+            $this->loadZips();
         }
 
-        throw new NoZipFoundException($zip);
+        if(!array_key_exists($zip, $this->zips)) {
+            throw new NoZipFoundException($zip);
+        }
+
+        return $this->createZipModel($zip, $this->zips[$zip]);
+
     }
 
-    private function createZipModel($data): Zip
+    private function createZipModel(string $zip, array $data): Zip
     {
-        return new Zip($data[2], $data[1], $data[3]);
+        return new Zip($zip, $data[0], $data[1]);
+    }
+
+    private function loadZips()
+    {
+        $this->zips = [];
+        $zipFileHandle = fopen(__DIR__.'/../Resources/zips.csv', 'r');
+
+        while (($data = fgetcsv($zipFileHandle)) !== false) {
+            $this->zips[$data[1]] = [$data[0], $data[2]];
+        }
+        if (!is_resource($zipFileHandle)) {
+            throw new DatabaseReadException();
+        }
+        fclose($zipFileHandle);
+
     }
 }
